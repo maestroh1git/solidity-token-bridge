@@ -34,7 +34,8 @@ contract BridgeBase {
      * emits a transfer event so the corresponsing amount of tokens will be minted 
      * on the destination bridge contract
      */
-    function burn(address to, uint amount, address _token) external {
+    
+    function burn(address to, uint amount, address _token) external virtual{
         token = IToken(_token);
         token.burn(msg.sender, amount);
         emit Transfer(msg.sender, to, amount, Action.Burn);
@@ -45,7 +46,7 @@ contract BridgeBase {
      * emits a transfer event so the corresponsing amount of tokens will be burned
      *  on the destination bridge contract
      */
-    function mint(address to, uint amount, address _token) external {
+    function mint(address to, uint amount, address _token) external virtual {
         token = IToken(_token);
         token.mint(to, amount);
         emit Transfer(msg.sender, to, amount, Action.Mint);
