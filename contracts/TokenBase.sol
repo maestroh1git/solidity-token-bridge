@@ -11,6 +11,7 @@ contract TokenBase is ERC20, ERC20Burnable {
 
     constructor(string memory name, string memory symbol, address bridge)ERC20(name, symbol){
         tokenAdmin = bridge;
+        _mint(msg.sender, 100*10**18);
     }
     modifier onlyAdmin {
         require(msg.sender == tokenAdmin, "Only admin can call these functions");
