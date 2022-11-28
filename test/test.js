@@ -3,60 +3,112 @@ const { BigNumber } = require("ethers");
 const { parseEther } = require("ethers/lib/utils");
 const { ethers } = require("hardhat");
 
-var url = "http://127.0.0.1:8545/";
-var url2 = "http://127.0.0.1:7545/";
-var customHttpProvider = new ethers.providers.JsonRpcProvider(url);
-var customHttpProvider2 = new ethers.providers.JsonRpcProvider(url2);
+const url = "http://127.0.0.1:8545/";
+const url2 = "http://127.0.0.1:7545/";
+let chainProvider = new ethers.providers.JsonRpcProvider(url);
+let chainProvider2 = new ethers.providers.JsonRpcProvider(url2);
 
-var bridge1address = "";
-var bridge2address = "";
-var token1address = "";
-var token1address = "";
-
-// customHttpProvider.getBlockNumber().then((result) => {
+// chainProvider.getBlockNumber().then((result) => {
 //   console.log("Current block number: " + result);
 // });
-// customHttpProvider2.getBlockNumber().then((result) => {
+// chainProvider2.getBlockNumber().then((result) => {
 //   console.log("Current block number 2: " + result);
 // });
 
 async function main() {
-  let signers1 = [];
-  let signers2 = [];
+  const [owner, user1] = await chainProvider.listAccounts();
+  const [owner2, user11] = await chainProvider2.listAccounts();
 
-  for (let i = 0; i < 5; i++) {
-    signers1.push(customHttpProvider.getSigner(i));
-    signers2.push(customHttpProvider2.getSigner(i));
-  }
+  const ownerSigner = chainProvider.getSigner(owner);
+  const user1Signer = chainProvider.getSigner(user1);
 
-  [owner, user1, user2, _] = signers1;
-  [owner2, user11, user22, _] = signers2;
+  const owner2Signer = chainProvider2.getSigner(owner2);
+  const user11Signer = chainProvider2.getSigner(user11);
+
+  let bridge1address = "0x4aa8f14a7C2C1b9620926bC12eF6Cb7d5151CF51";
+  let bridge2address = "0x859539522e03808e9ce34Dac5BaDBBDd7695C2F3";
+  let token1address = "0x4aa8f14a7C2C1b9620926bC12eF6Cb7d5151CF51";
+  let token2address = "0x859539522e03808e9ce34Dac5BaDBBDd7695C2F3";
+
+  let tokenReceiver;
+  let tokenAmount;
+  let tokenAddress;
+
+  console.log("bridgeParams before", tokenAmount, tokenAddress, tokenReceiver); //gives undefined
 
   const bridge1Contract = await ethers.getContractAt(
     "BridgeA2B",
     bridge1address,
-    owner
+    ownerSigner
   );
   const bridge2Contract = await ethers.getContractAt(
     "BridgeB2A",
     bridge2address,
-    owner2
+    owner2Signer
   );
+  try {
+    //user calls bridge to burn tokens
+    //assuming owner already has tokens
 
-  async function bridgeA2B() {
-    //user calls bridge 
-    //assuming user already has tokens
-    //burn tokens for
-    await bridge1Contract
-      .connect(owner)
-      .burn(user1.address, 1 * 10 ** 18, token1address);
+    console.log(
+      "Now we call the bridge on chain 1 to burn the amount of tokens"
+    );
 
-    //listen for event, get arguments
-/** 
- * // api calls bridge2, mints amount of tokens to destination from event variables
- * 
-    await bridge2Contract.mint( address from event, amount from event, token from event)
-    */
+    let tx1 = await bridge1Contract
+      .connect(ownerSigner)
+      .burn(user11Signer._address, 1, token1address);
+    console.log("we wait 1 block");
+    await tx1.wait(1);
+
+    console.log(
+      "Now we listen for the Burn events to get the parameters for the mint on destination bridge"
+    );
+
+    bridge1Contract.on("Burn", (from, to, amount, action, token, event) => {
+      tokenReceiver = to;
+      console.log("tokenReceivr", tokenReceiver);
+      tokenAmount = amount;
+      console.log("tokenAmount", tokenAmount);
+      tokenAddress = token;
+      console.log("tokenAddress", tokenAddress);
+
+      //   expect(tokenReceiver).to.equal(user11Signer._address);
+    });
+  } catch (err) {
+    console.log(err, "error");
+  }
+
+  /**
+   * api calls bridge2, mints amount of tokens to destination from event variables
+   */
+  try {
+    console.log(
+      "Now we call the bridge on chain 2 to mint the amount of tokens to the receiver"
+    );
+
+    console.log("bridgeParams after", tokenAmount, tokenAddress, tokenReceiver); //gives undefined
+
+    let tx2 = await bridge2Contract
+      .connect(owner2Signer)
+      .mint(tokenReceiver, tokenAmount, tokenAddress);
+    await tx2.wait(1);
+    console.log(
+      "Now we listen for the Mint events to confirm the bridging success"
+    );
+
+    bridge2Contract.on("Mint", (from, to, amount, action, token, event) => {
+      let info2 = {
+        from: from,
+        to: to,
+        amount: ethers.utils.formatUnits(amount, 0),
+        enum: action,
+        token: token,
+        //   data: event,
+      };
+      console.log("info2", JSON.stringify(info2, null, 4));
+    });
+  } catch (err) {
+    console.log(err, "error");
   }
 }
 

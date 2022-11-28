@@ -18,7 +18,9 @@ contract BridgeBase {
     
     
     // * Transfer event for monitoring party, to facilitate bridge actions
-    event Transfer( address from, address to, uint amount, Action action);
+    event Burn( address from, address to, uint amount, Action action, address token);
+    event Mint( address from, address to, uint amount, Action action, address token);
+
 
 
     /**
@@ -38,7 +40,7 @@ contract BridgeBase {
     function burn(address to, uint amount, address _token) external virtual{
         token = IToken(_token);
         token.burn(msg.sender, amount);
-        emit Transfer(msg.sender, to, amount, Action.Burn);
+        emit Burn(msg.sender, to, amount, Action.Burn, _token);
     }
 
     /**
@@ -49,7 +51,7 @@ contract BridgeBase {
     function mint(address to, uint amount, address _token) external virtual {
         token = IToken(_token);
         token.mint(to, amount);
-        emit Transfer(msg.sender, to, amount, Action.Mint);
+        emit Mint(msg.sender, to, amount, Action.Mint, _token);
 
     }
 

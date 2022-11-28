@@ -29,3 +29,7 @@ main().catch((error) => {
     console.error(error);
     process.exitCode = 1;
   });
+
+
+  // bridge= 0x7fd7fabde4716a97fbac9163aca43db32601c125
+  // token = 0xc5cca474666952b3c19304f17e35c784c7c8d552
