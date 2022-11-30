@@ -24,10 +24,23 @@ It calls the Token contract on the destination chain with the admin Wallet, and 
 
 (with cross-chain interoperability, the bridge contract can call the token contract, avoiding the need for an intermediate api)
 
-##Requirements
+# Requirements
 Bridge Contract on chain A and B
 Token contract on chain A and B
 Events listener api with admin wallet
 
--
+
+open a new terminal
+```
+ganache-cli -p 7545
+
+```
+open another terminal
+```
+ganache-cli -p 8545
+
+```
+
+now you have 2 evm chains ready for our Bridge
+
 
